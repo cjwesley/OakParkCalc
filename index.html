@@ -55,6 +55,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .hero-card.danger{background:var(--color-danger-light)}
 .hero-amount{display:block;font-size:2rem;font-weight:800;color:var(--color-primary);line-height:1.1}
 .hero-card.danger .hero-amount{color:var(--color-danger)}
+.hero-card.payback-good{background:var(--color-primary-light)}
+.hero-card.payback-good .hero-amount{color:var(--color-primary)}
 .hero-label{font-size:0.85rem;color:var(--color-text-muted);margin-top:0.25rem}
 
 .breakdown h3{font-size:0.95rem;margin-bottom:0.5rem;color:var(--color-text-muted)}
@@ -212,6 +214,15 @@ function GapSection(props) {
     ),
     e("p", {className: "gap-desc"},
       "This is how much the community invested in your children\u2019s education beyond what you paid in school taxes. When families leave after graduation, this investment leaves with them. Zoning reform that creates housing for empty nesters helps keep them \u2014 and their tax dollars \u2014 here."
+    ),
+    e("div", {className: "hero-numbers", style: {marginTop: "1.5rem"}},
+      e("div", {className: r.yearsToPayback > 5 ? "hero-card danger" : "hero-card payback-good"},
+        e("span", {className: "hero-amount"}, r.yearsToPayback + " yrs"),
+        e("span", {className: "hero-label"}, "to pay back the full cost of your kids\u2019 education")
+      )
+    ),
+    e("p", {className: "gap-desc"},
+      "At " + fmt(r.annualEducationTax) + "/yr in education taxes, it would take " + r.yearsToPayback + " years of living in Oak Park to fully pay back what the community spent educating your children."
     )
   );
 }
@@ -230,7 +241,8 @@ function OakParkEducationCalculator() {
     var totalEducationTaxPaid = annualEducationTax * years;
     var totalSpentOnKids = kids * TOTAL_SCHOOL_YEARS * BLENDED_PER_PUPIL;
     var gap = totalSpentOnKids - totalEducationTaxPaid;
-    return {annualPropertyTax: annualPropertyTax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap};
+    var yearsToPayback = annualEducationTax > 0 ? Math.ceil(totalSpentOnKids / annualEducationTax) : 0;
+    return {annualPropertyTax: annualPropertyTax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap, yearsToPayback: yearsToPayback};
   }, [kids, homeValue, years]);
 
   function handleReset() {
