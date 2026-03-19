@@ -126,6 +126,9 @@ var D97_TAX_RATE = 4.397050;
 /** D200 total rate per $100 EAV (2024 Cook County Clerk) */
 var D200_TAX_RATE = 2.706722;
 var COMBINED_EDUCATION_RATE = D97_TAX_RATE + D200_TAX_RATE;
+/** Composite rate of all non-school taxing bodies per $100 EAV (2024 Cook County Clerk) */
+var NON_SCHOOL_RATE = 2.2036 + 0.5455 + 0.2711 + 0.2708 + 0.3905 + 0.0686 + 0.3404; /* Village, Park Dist, Township, Triton, County, Forest Preserve, Metro Water */
+var TOTAL_COMPOSITE_RATE = COMBINED_EDUCATION_RATE + NON_SCHOOL_RATE;
 var MEDIAN_HOME = 465000;
 
 function fmt(n) {
@@ -183,6 +186,7 @@ function ResultsPanel(props) {
           e("tr", null, e("td", null, "Homeowner exemption"), e("td", {className: "num"}, "-" + fmt(HOMEOWNER_EXEMPTION))),
           e("tr", {className: "highlight-row"}, e("td", null, "Adjusted EAV"), e("td", {className: "num"}, fmt(r.adjustedEAV))),
           e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "What you pay")),
+          e("tr", null, e("td", null, "Total property tax (all bodies)"), e("td", {className: "num"}, fmt(r.annualTotalPropertyTax) + "/yr")),
           e("tr", null, e("td", null, "D97 taxes (rate: " + D97_TAX_RATE.toFixed(2) + "/$100)"), e("td", {className: "num"}, fmt(r.annualD97Tax) + "/yr")),
           e("tr", null, e("td", null, "D200 taxes (rate: " + D200_TAX_RATE.toFixed(2) + "/$100)"), e("td", {className: "num"}, fmt(r.annualD200Tax) + "/yr")),
           e("tr", {className: "highlight-row"}, e("td", null, "Total education taxes (" + props.years + " yrs)"), e("td", {className: "num"}, fmt(r.totalEducationTaxPaid))),
@@ -256,11 +260,12 @@ function OakParkEducationCalculator() {
     var annualD97Tax = adjustedEAV * D97_TAX_RATE / 100;
     var annualD200Tax = adjustedEAV * D200_TAX_RATE / 100;
     var annualEducationTax = annualD97Tax + annualD200Tax;
+    var annualTotalPropertyTax = adjustedEAV * TOTAL_COMPOSITE_RATE / 100;
     var totalEducationTaxPaid = annualEducationTax * years;
     var totalSpentOnKids = kids * TOTAL_SCHOOL_YEARS * BLENDED_PER_PUPIL;
     var gap = totalSpentOnKids - totalEducationTaxPaid;
     var yearsToPayback = annualEducationTax > 0 ? Math.ceil(totalSpentOnKids / annualEducationTax) : 0;
-    return {assessedValue: assessedValue, equalizedValue: equalizedValue, adjustedEAV: adjustedEAV, annualD97Tax: annualD97Tax, annualD200Tax: annualD200Tax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap, yearsToPayback: yearsToPayback};
+    return {assessedValue: assessedValue, equalizedValue: equalizedValue, adjustedEAV: adjustedEAV, annualTotalPropertyTax: annualTotalPropertyTax, annualD97Tax: annualD97Tax, annualD200Tax: annualD200Tax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap, yearsToPayback: yearsToPayback};
   }, [kids, homeValue, years]);
 
   function handleReset() {
