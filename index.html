@@ -116,8 +116,16 @@ var TOTAL_SCHOOL_YEARS = D97_YEARS + D200_YEARS;
 var BLENDED_PER_PUPIL = Math.round(
   (D97_PER_PUPIL * D97_YEARS + D200_PER_PUPIL * D200_YEARS) / TOTAL_SCHOOL_YEARS
 );
-var EDUCATION_TAX_SHARE = 0.70;
-var EFFECTIVE_TAX_RATE = 0.024;
+
+/** Cook County property tax constants (2024 tax year) */
+var ASSESSMENT_RATIO = 0.10;
+var EQUALIZATION_MULTIPLIER = 3.0355;
+var HOMEOWNER_EXEMPTION = 10000;
+/** D97 total rate per $100 EAV (2024 Cook County Clerk) */
+var D97_TAX_RATE = 4.397050;
+/** D200 total rate per $100 EAV (2024 Cook County Clerk) */
+var D200_TAX_RATE = 2.706722;
+var COMBINED_EDUCATION_RATE = D97_TAX_RATE + D200_TAX_RATE;
 var MEDIAN_HOME = 465000;
 
 function fmt(n) {
@@ -169,10 +177,15 @@ function ResultsPanel(props) {
       e("h3", null, "Calculation breakdown"),
       e("table", {className: "breakdown-table"},
         e("tbody", null,
+          e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "Your EAV (Cook County method)")),
+          e("tr", null, e("td", null, "Assessed value (10% of market)"), e("td", {className: "num"}, fmt(r.assessedValue))),
+          e("tr", null, e("td", null, "Equalized value (\u00d7 3.0355)"), e("td", {className: "num"}, fmt(r.equalizedValue))),
+          e("tr", null, e("td", null, "Homeowner exemption"), e("td", {className: "num"}, "-" + fmt(HOMEOWNER_EXEMPTION))),
+          e("tr", {className: "highlight-row"}, e("td", null, "Adjusted EAV"), e("td", {className: "num"}, fmt(r.adjustedEAV))),
           e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "What you pay")),
-          e("tr", null, e("td", null, "Annual property tax (est.)"), e("td", {className: "num"}, fmt(r.annualPropertyTax))),
-          e("tr", null, e("td", null, "Education share (~70%)"), e("td", {className: "num"}, fmt(r.annualEducationTax))),
-          e("tr", {className: "highlight-row"}, e("td", null, "Total education taxes paid (" + props.years + " yrs)"), e("td", {className: "num"}, fmt(r.totalEducationTaxPaid))),
+          e("tr", null, e("td", null, "D97 taxes (rate: " + D97_TAX_RATE.toFixed(2) + "/$100)"), e("td", {className: "num"}, fmt(r.annualD97Tax) + "/yr")),
+          e("tr", null, e("td", null, "D200 taxes (rate: " + D200_TAX_RATE.toFixed(2) + "/$100)"), e("td", {className: "num"}, fmt(r.annualD200Tax) + "/yr")),
+          e("tr", {className: "highlight-row"}, e("td", null, "Total education taxes (" + props.years + " yrs)"), e("td", {className: "num"}, fmt(r.totalEducationTaxPaid))),
           e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "What the community spends")),
           e("tr", null, e("td", null, "D97 per pupil (K\u20138, 9 yrs)"), e("td", {className: "num"}, fmt(D97_PER_PUPIL) + "/yr")),
           e("tr", null, e("td", null, "D200 per pupil (9\u201312, 4 yrs)"), e("td", {className: "num"}, fmt(D200_PER_PUPIL) + "/yr")),
@@ -236,13 +249,18 @@ function OakParkEducationCalculator() {
   var years = yearsState[0], setYears = yearsState[1];
 
   var results = useMemo(function() {
-    var annualPropertyTax = homeValue * EFFECTIVE_TAX_RATE;
-    var annualEducationTax = annualPropertyTax * EDUCATION_TAX_SHARE;
+    /* Cook County EAV-based calculation */
+    var assessedValue = homeValue * ASSESSMENT_RATIO;
+    var equalizedValue = assessedValue * EQUALIZATION_MULTIPLIER;
+    var adjustedEAV = Math.max(0, equalizedValue - HOMEOWNER_EXEMPTION);
+    var annualD97Tax = adjustedEAV * D97_TAX_RATE / 100;
+    var annualD200Tax = adjustedEAV * D200_TAX_RATE / 100;
+    var annualEducationTax = annualD97Tax + annualD200Tax;
     var totalEducationTaxPaid = annualEducationTax * years;
     var totalSpentOnKids = kids * TOTAL_SCHOOL_YEARS * BLENDED_PER_PUPIL;
     var gap = totalSpentOnKids - totalEducationTaxPaid;
     var yearsToPayback = annualEducationTax > 0 ? Math.ceil(totalSpentOnKids / annualEducationTax) : 0;
-    return {annualPropertyTax: annualPropertyTax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap, yearsToPayback: yearsToPayback};
+    return {assessedValue: assessedValue, equalizedValue: equalizedValue, adjustedEAV: adjustedEAV, annualD97Tax: annualD97Tax, annualD200Tax: annualD200Tax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap, yearsToPayback: yearsToPayback};
   }, [kids, homeValue, years]);
 
   function handleReset() {
@@ -270,11 +288,13 @@ function OakParkEducationCalculator() {
     ),
     e("footer", {className: "app-footer"},
       e("p", null,
-        "Per-pupil expenditures: D97 " + fmt(D97_PER_PUPIL) + "/yr \u00b7 D200 " + fmt(D200_PER_PUPIL) + "/yr. Sources: ",
+        "Per-pupil expenditures: D97 " + fmt(D97_PER_PUPIL) + "/yr \u00b7 D200 " + fmt(D200_PER_PUPIL) + "/yr. Tax rates use Cook County EAV method (10% assessment \u00d7 3.0355 equalizer \u2212 $10K homeowner exemption). Sources: ",
         e("a", {href: "https://www.illinoisreportcard.com/district.aspx?districtid=06016097002&source=environment&source2=sber", target: "_blank", rel: "noopener"}, "D97 Illinois Report Card"),
         " \u00b7 ",
         e("a", {href: "https://www.illinoisreportcard.com/District.aspx?districtId=06016200013", target: "_blank", rel: "noopener"}, "D200 Illinois Report Card"),
-        " \u00b7 Education tax share (~70%) from Oak Park taxing body analysis. Effective property tax rate estimated at ~2.4% of market value. This is an estimate for informational purposes only."
+        " \u00b7 ",
+        e("a", {href: "https://www.cookcountyclerkil.gov/property-taxes/tax-extension-and-rates", target: "_blank", rel: "noopener"}, "2024 Cook County Clerk Tax Rates"),
+        " (D97: " + D97_TAX_RATE.toFixed(2) + "/$100 EAV, D200: " + D200_TAX_RATE.toFixed(2) + "/$100 EAV). This is an estimate for informational purposes only."
       )
     )
   );
