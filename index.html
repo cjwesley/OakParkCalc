@@ -6,32 +6,7 @@
   <title>Oak Park Education Investment Calculator</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="text/babel" data-type="module">
-const { useState, useMemo } = React;
-
-/* ── Data & Constants ── */
-const D97_PER_PUPIL = 22199;
-const D200_PER_PUPIL = 25135;
-const D97_YEARS = 9;
-const D200_YEARS = 4;
-const TOTAL_SCHOOL_YEARS = D97_YEARS + D200_YEARS;
-const BLENDED_PER_PUPIL = Math.round(
-  (D97_PER_PUPIL * D97_YEARS + D200_PER_PUPIL * D200_YEARS) / TOTAL_SCHOOL_YEARS
-);
-const EDUCATION_TAX_SHARE = 0.70;
-const EFFECTIVE_TAX_RATE = 0.024;
-const MEDIAN_HOME = 465000;
-
-function fmt(n) {
-  return "$" + Math.round(n).toLocaleString("en-US");
-}
-
-/* ── Styles ── */
-const css = `
+  <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --color-bg:#f5f6f8;--color-surface:#ffffff;--color-primary:#1a4d8f;
@@ -62,18 +37,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .input-panel{grid-row:1;grid-column:1}
 .results-panel{grid-row:1;grid-column:2}
 .gap-section{grid-row:2;grid-column:1/-1}
-@media(max-width:700px){
-  .app{padding:1rem 0.75rem}
-  .app-header{margin-bottom:1.25rem}
-  .app-header h1{font-size:1.25rem}
-  .subtitle{font-size:0.85rem}
-  .app-layout{grid-template-columns:1fr;gap:1rem}
-  .input-panel,.results-panel,.gap-section{grid-row:auto;grid-column:auto}
-  .input-panel,.results-panel,.gap-section{padding:1rem}
-  .hero-numbers{gap:0.5rem;margin-bottom:1rem}
-  .breakdown-table{font-size:0.8rem}
-  .breakdown-table td{padding:0.3rem 0}
-}
 
 .input-panel,.results-panel,.gap-section{
   background:var(--color-surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.5rem;
@@ -111,127 +74,163 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .app-footer p{font-size:0.78rem;color:var(--color-text-muted);max-width:640px;margin:0 auto}
 .app-footer a{color:var(--color-primary);text-decoration:none}
 .app-footer a:hover{text-decoration:underline}
-`;
 
-/* ── Components ── */
+@media(max-width:700px){
+  .app{padding:1rem 0.75rem}
+  .app-header{margin-bottom:1.25rem}
+  .app-header h1{font-size:1.15rem}
+  .subtitle{font-size:0.85rem}
+  .intro-text{font-size:0.82rem}
+  .header-row{flex-direction:column;gap:0.5rem}
+  .header-row .reset-button{position:static}
+  .app-layout{grid-template-columns:1fr;gap:1rem}
+  .input-panel,.results-panel,.gap-section{grid-row:auto;grid-column:auto}
+  .input-panel,.results-panel,.gap-section{padding:1rem}
+  .hero-numbers{flex-direction:column;gap:0.5rem;margin-bottom:1rem}
+  .hero-card{padding:0.75rem 0.5rem}
+  .hero-amount{font-size:1.5rem}
+  .hero-label{font-size:0.78rem}
+  .breakdown-table{font-size:0.8rem}
+  .breakdown-table td{padding:0.3rem 0}
+  .value-display,.dollar-sign{font-size:1.1rem}
+  .app-footer p{font-size:0.72rem}
+  .gap-bar-labels{font-size:0.7rem}
+}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+"use strict";
+var e = React.createElement;
+var useState = React.useState;
+var useMemo = React.useMemo;
 
-function InputPanel({ kids, setKids, homeValue, setHomeValue, years, setYears }) {
-  return (
-    <div className="input-panel">
-      <h2>Your Household</h2>
-      <label className="input-label">
-        Children in public school
-        <div className="value-row">
-          <span className="value-display">{kids}</span>
-        </div>
-        <input type="range" className="slider" min={1} max={6} step={1} value={kids} onChange={(e) => setKids(+e.target.value)} />
-        <div className="slider-labels"><span>1</span><span>6</span></div>
-      </label>
-      <label className="input-label">
-        Home market value
-        <div className="value-row">
-          <span className="dollar-sign">$</span>
-          <span className="value-display">{homeValue.toLocaleString("en-US")}</span>
-        </div>
-        <input type="range" className="slider" min={200000} max={1500000} step={25000} value={homeValue} onChange={(e) => setHomeValue(+e.target.value)} />
-        <div className="slider-labels"><span>$200K</span><span>$1.5M</span></div>
-      </label>
-      <label className="input-label">
-        Years in Oak Park
-        <div className="value-row">
-          <span className="value-display">{years}</span>
-        </div>
-        <input type="range" className="slider" min={5} max={40} step={1} value={years} onChange={(e) => setYears(+e.target.value)} />
-        <div className="slider-labels"><span>5</span><span>40</span></div>
-      </label>
-    </div>
+var D97_PER_PUPIL = 22199;
+var D200_PER_PUPIL = 25135;
+var D97_YEARS = 9;
+var D200_YEARS = 4;
+var TOTAL_SCHOOL_YEARS = D97_YEARS + D200_YEARS;
+var BLENDED_PER_PUPIL = Math.round(
+  (D97_PER_PUPIL * D97_YEARS + D200_PER_PUPIL * D200_YEARS) / TOTAL_SCHOOL_YEARS
+);
+var EDUCATION_TAX_SHARE = 0.70;
+var EFFECTIVE_TAX_RATE = 0.024;
+var MEDIAN_HOME = 465000;
+
+function fmt(n) {
+  return "$" + Math.round(n).toLocaleString("en-US");
+}
+
+function InputPanel(props) {
+  return e("div", {className: "input-panel"},
+    e("h2", null, "Your Household"),
+    e("label", {className: "input-label"},
+      "Children in public school",
+      e("div", {className: "value-row"},
+        e("span", {className: "value-display"}, props.kids)
+      ),
+      e("input", {type: "range", className: "slider", min: 1, max: 6, step: 1, value: props.kids, onChange: function(ev) { props.setKids(+ev.target.value); }}),
+      e("div", {className: "slider-labels"}, e("span", null, "1"), e("span", null, "6"))
+    ),
+    e("label", {className: "input-label"},
+      "Home market value",
+      e("div", {className: "value-row"},
+        e("span", {className: "dollar-sign"}, "$"),
+        e("span", {className: "value-display"}, props.homeValue.toLocaleString("en-US"))
+      ),
+      e("input", {type: "range", className: "slider", min: 200000, max: 1500000, step: 25000, value: props.homeValue, onChange: function(ev) { props.setHomeValue(+ev.target.value); }}),
+      e("div", {className: "slider-labels"}, e("span", null, "$200K"), e("span", null, "$1.5M"))
+    ),
+    e("label", {className: "input-label"},
+      "Years in Oak Park",
+      e("div", {className: "value-row"},
+        e("span", {className: "value-display"}, props.years)
+      ),
+      e("input", {type: "range", className: "slider", min: 5, max: 40, step: 1, value: props.years, onChange: function(ev) { props.setYears(+ev.target.value); }}),
+      e("div", {className: "slider-labels"}, e("span", null, "5"), e("span", null, "40"))
+    )
   );
 }
 
-function ResultsPanel({ results, kids, years }) {
-  return (
-    <div className="results-panel">
-      <h2>Education Investment</h2>
-      <div className="hero-numbers">
-        <div className="hero-card">
-          <span className="hero-amount">{fmt(results.annualEducationTax)}</span>
-          <span className="hero-label">your annual D97/D200 taxes</span>
-        </div>
-      </div>
-      <div className="breakdown">
-        <h3>Calculation breakdown</h3>
-        <table className="breakdown-table">
-          <tbody>
-            <tr className="section-label"><td colSpan={2}>What you pay</td></tr>
-            <tr><td>Annual property tax (est.)</td><td className="num">{fmt(results.annualPropertyTax)}</td></tr>
-            <tr><td>Education share (~70%)</td><td className="num">{fmt(results.annualEducationTax)}</td></tr>
-            <tr className="highlight-row"><td>Total education taxes paid ({years} yrs)</td><td className="num">{fmt(results.totalEducationTaxPaid)}</td></tr>
-            <tr className="section-label"><td colSpan={2}>What the community spends</td></tr>
-            <tr><td>D97 per pupil (K–8, 9 yrs)</td><td className="num">{fmt(D97_PER_PUPIL)}/yr</td></tr>
-            <tr><td>D200 per pupil (9–12, 4 yrs)</td><td className="num">{fmt(D200_PER_PUPIL)}/yr</td></tr>
-            <tr><td>Blended K–12 average</td><td className="num">{fmt(BLENDED_PER_PUPIL)}/yr</td></tr>
-            <tr className="highlight-row"><td>Total spent on {kids} child{kids > 1 ? "ren" : ""} (K–12)</td><td className="num">{fmt(results.totalSpentOnKids)}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+function ResultsPanel(props) {
+  var r = props.results;
+  return e("div", {className: "results-panel"},
+    e("h2", null, "Education Investment"),
+    e("div", {className: "hero-numbers"},
+      e("div", {className: "hero-card"},
+        e("span", {className: "hero-amount"}, fmt(r.annualEducationTax)),
+        e("span", {className: "hero-label"}, "your annual D97/D200 taxes")
+      )
+    ),
+    e("div", {className: "breakdown"},
+      e("h3", null, "Calculation breakdown"),
+      e("table", {className: "breakdown-table"},
+        e("tbody", null,
+          e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "What you pay")),
+          e("tr", null, e("td", null, "Annual property tax (est.)"), e("td", {className: "num"}, fmt(r.annualPropertyTax))),
+          e("tr", null, e("td", null, "Education share (~70%)"), e("td", {className: "num"}, fmt(r.annualEducationTax))),
+          e("tr", {className: "highlight-row"}, e("td", null, "Total education taxes paid (" + props.years + " yrs)"), e("td", {className: "num"}, fmt(r.totalEducationTaxPaid))),
+          e("tr", {className: "section-label"}, e("td", {colSpan: 2}, "What the community spends")),
+          e("tr", null, e("td", null, "D97 per pupil (K\u20138, 9 yrs)"), e("td", {className: "num"}, fmt(D97_PER_PUPIL) + "/yr")),
+          e("tr", null, e("td", null, "D200 per pupil (9\u201312, 4 yrs)"), e("td", {className: "num"}, fmt(D200_PER_PUPIL) + "/yr")),
+          e("tr", null, e("td", null, "Blended K\u201312 average"), e("td", {className: "num"}, fmt(BLENDED_PER_PUPIL) + "/yr")),
+          e("tr", {className: "highlight-row"}, e("td", null, "Total spent on " + props.kids + " child" + (props.kids > 1 ? "ren" : "") + " (K\u201312)"), e("td", {className: "num"}, fmt(r.totalSpentOnKids)))
+        )
+      )
+    )
   );
 }
 
-function GapSection({ results }) {
-  const pct = results.totalSpentOnKids > 0
-    ? (results.totalEducationTaxPaid / results.totalSpentOnKids) * 100
-    : 0;
-  return (
-    <div className="gap-section">
-      <h2>The Social Contract Gap</h2>
-      <div className="hero-numbers">
-        <div className="hero-card">
-          <span className="hero-amount">{fmt(results.totalEducationTaxPaid)}</span>
-          <span className="hero-label">what you paid in education taxes</span>
-        </div>
-        <div className="hero-card">
-          <span className="hero-amount">{fmt(results.totalSpentOnKids)}</span>
-          <span className="hero-label">what the community spent educating your kids</span>
-        </div>
-        <div className="hero-card danger">
-          <span className="hero-amount">{fmt(results.gap)}</span>
-          <span className="hero-label">the gap</span>
-        </div>
-      </div>
-      <div className="gap-bar-track">
-        <div className="gap-bar-fill" style={{ width: `${Math.min(pct, 100)}%`, background: "var(--color-primary)" }}>
-          {pct > 18 && <span>What you paid</span>}
-        </div>
-      </div>
-      <div className="gap-bar-labels">
-        <span>{fmt(results.totalEducationTaxPaid)} paid</span>
-        <span>{fmt(results.totalSpentOnKids)} spent</span>
-      </div>
-      <p className="gap-desc">
-        This is how much the community invested in your children's education beyond what you
-        paid in school taxes. When families leave after graduation, this investment leaves with
-        them. Zoning reform that creates housing for empty nesters helps keep them — and their
-        tax dollars — here.
-      </p>
-    </div>
+function GapSection(props) {
+  var r = props.results;
+  var pct = r.totalSpentOnKids > 0 ? (r.totalEducationTaxPaid / r.totalSpentOnKids) * 100 : 0;
+  return e("div", {className: "gap-section"},
+    e("h2", null, "The Social Contract Gap"),
+    e("div", {className: "hero-numbers"},
+      e("div", {className: "hero-card"},
+        e("span", {className: "hero-amount"}, fmt(r.totalEducationTaxPaid)),
+        e("span", {className: "hero-label"}, "what you paid in education taxes")
+      ),
+      e("div", {className: "hero-card"},
+        e("span", {className: "hero-amount"}, fmt(r.totalSpentOnKids)),
+        e("span", {className: "hero-label"}, "what the community spent educating your kids")
+      ),
+      e("div", {className: "hero-card danger"},
+        e("span", {className: "hero-amount"}, fmt(r.gap)),
+        e("span", {className: "hero-label"}, "the gap")
+      )
+    ),
+    e("div", {className: "gap-bar-track"},
+      e("div", {className: "gap-bar-fill", style: {width: Math.min(pct, 100) + "%", background: "var(--color-primary)"}},
+        pct > 18 ? e("span", null, "What you paid") : null
+      )
+    ),
+    e("div", {className: "gap-bar-labels"},
+      e("span", null, fmt(r.totalEducationTaxPaid) + " paid"),
+      e("span", null, fmt(r.totalSpentOnKids) + " spent")
+    ),
+    e("p", {className: "gap-desc"},
+      "This is how much the community invested in your children\u2019s education beyond what you paid in school taxes. When families leave after graduation, this investment leaves with them. Zoning reform that creates housing for empty nesters helps keep them \u2014 and their tax dollars \u2014 here."
+    )
   );
 }
-
-/* ── Main App ── */
 
 function OakParkEducationCalculator() {
-  const [kids, setKids] = useState(2);
-  const [homeValue, setHomeValue] = useState(MEDIAN_HOME);
-  const [years, setYears] = useState(20);
+  var kidsState = useState(2);
+  var kids = kidsState[0], setKids = kidsState[1];
+  var homeState = useState(MEDIAN_HOME);
+  var homeValue = homeState[0], setHomeValue = homeState[1];
+  var yearsState = useState(20);
+  var years = yearsState[0], setYears = yearsState[1];
 
-  const results = useMemo(() => {
-    const annualPropertyTax = homeValue * EFFECTIVE_TAX_RATE;
-    const annualEducationTax = annualPropertyTax * EDUCATION_TAX_SHARE;
-    const totalEducationTaxPaid = annualEducationTax * years;
-    const totalSpentOnKids = kids * TOTAL_SCHOOL_YEARS * BLENDED_PER_PUPIL;
-    const gap = totalSpentOnKids - totalEducationTaxPaid;
-    return { annualPropertyTax, annualEducationTax, totalEducationTaxPaid, totalSpentOnKids, gap };
+  var results = useMemo(function() {
+    var annualPropertyTax = homeValue * EFFECTIVE_TAX_RATE;
+    var annualEducationTax = annualPropertyTax * EDUCATION_TAX_SHARE;
+    var totalEducationTaxPaid = annualEducationTax * years;
+    var totalSpentOnKids = kids * TOTAL_SCHOOL_YEARS * BLENDED_PER_PUPIL;
+    var gap = totalSpentOnKids - totalEducationTaxPaid;
+    return {annualPropertyTax: annualPropertyTax, annualEducationTax: annualEducationTax, totalEducationTaxPaid: totalEducationTaxPaid, totalSpentOnKids: totalSpentOnKids, gap: gap};
   }, [kids, homeValue, years]);
 
   function handleReset() {
@@ -240,44 +239,37 @@ function OakParkEducationCalculator() {
     setYears(20);
   }
 
-  return (
-    <>
-      <style>{css}</style>
-      <div className="app">
-        <header className="app-header">
-          <div className="header-row">
-            <h1>Oak Park Education Investment Calculator</h1>
-            <button className="reset-button" onClick={handleReset}>Reset</button>
-          </div>
-          <p className="intro-text">
-            Public schools are funded by the entire community for the benefit of the community.
-            This calculator shows the <strong>gap between what a family pays in education taxes
-            and what it costs to educate their children</strong> — and what happens to that
-            investment when families leave Oak Park after graduation.
-          </p>
-        </header>
-        <main className="app-layout">
-          <InputPanel kids={kids} setKids={setKids} homeValue={homeValue} setHomeValue={setHomeValue} years={years} setYears={setYears} />
-          <ResultsPanel results={results} kids={kids} years={years} />
-          <GapSection results={results} />
-        </main>
-        <footer className="app-footer">
-          <p>
-            Per-pupil expenditures: D97 {fmt(D97_PER_PUPIL)}/yr · D200 {fmt(D200_PER_PUPIL)}/yr.
-            Sources: <a href="https://www.illinoisreportcard.com/district.aspx?districtid=06016097002&source=environment&source2=sber" target="_blank" rel="noopener">D97 Illinois Report Card</a> ·{" "}
-            <a href="https://www.illinoisreportcard.com/District.aspx?districtId=06016200013" target="_blank" rel="noopener">D200 Illinois Report Card</a> ·{" "}
-            Education tax share (~70%) from Oak Park taxing body analysis.
-            Effective property tax rate estimated at ~2.4% of market value.
-            This is an estimate for informational purposes only.
-          </p>
-        </footer>
-      </div>
-    </>
+  return e("div", {className: "app"},
+    e("header", {className: "app-header"},
+      e("div", {className: "header-row"},
+        e("h1", null, "Oak Park Education Investment Calculator"),
+        e("button", {className: "reset-button", onClick: handleReset}, "Reset")
+      ),
+      e("p", {className: "intro-text"},
+        "Public schools are funded by the entire community for the benefit of the community. This calculator shows the ",
+        e("strong", null, "gap between what a family pays in education taxes and what it costs to educate their children"),
+        " \u2014 and what happens to that investment when families leave Oak Park after graduation."
+      )
+    ),
+    e("main", {className: "app-layout"},
+      e(InputPanel, {kids: kids, setKids: setKids, homeValue: homeValue, setHomeValue: setHomeValue, years: years, setYears: setYears}),
+      e(ResultsPanel, {results: results, kids: kids, years: years}),
+      e(GapSection, {results: results})
+    ),
+    e("footer", {className: "app-footer"},
+      e("p", null,
+        "Per-pupil expenditures: D97 " + fmt(D97_PER_PUPIL) + "/yr \u00b7 D200 " + fmt(D200_PER_PUPIL) + "/yr. Sources: ",
+        e("a", {href: "https://www.illinoisreportcard.com/district.aspx?districtid=06016097002&source=environment&source2=sber", target: "_blank", rel: "noopener"}, "D97 Illinois Report Card"),
+        " \u00b7 ",
+        e("a", {href: "https://www.illinoisreportcard.com/District.aspx?districtId=06016200013", target: "_blank", rel: "noopener"}, "D200 Illinois Report Card"),
+        " \u00b7 Education tax share (~70%) from Oak Park taxing body analysis. Effective property tax rate estimated at ~2.4% of market value. This is an estimate for informational purposes only."
+      )
+    )
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<OakParkEducationCalculator />);
+var root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(e(OakParkEducationCalculator));
   </script>
 </body>
 </html>
